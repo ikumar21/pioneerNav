@@ -1,0 +1,6 @@
+robot1_imu:
+  ros__parameters:
+    calibFileLoc: /home/pioneer3/pioneerTest/src/rsl_imu/config/paramsIMU.yaml
+    calibOffsetsRadii: [3, 43, 3, 232, 0, 0, 255, 255, 255, 254, 1, 158, 253, 229,
+      254, 196, 255, 232, 0, 12, 255, 221]
+    calibrateIMU: 1
