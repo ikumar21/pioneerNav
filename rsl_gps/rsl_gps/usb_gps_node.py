@@ -52,6 +52,9 @@ gps.send_command(b"PMTK220,1000")
 # Main loop runs forever printing the location, etc. every second.
 last_print = time.monotonic()
 
+dummyGPS = True;
+dummyLoc = [37.35230665171848, -121.94150740314477]
+
 
 class readGPS(Node):
 
@@ -78,6 +81,8 @@ class readGPS(Node):
         else:
             msg.status.status = 0
 
+        if(dummyGPS):
+            msg.latitude, msg.longitude = dummyLoc;
         self.publisher_.publish(msg)
         self.i += 1
 
