@@ -50,15 +50,25 @@ class giveDirections(Node):
 
         # Publisher to give cmd_vel to movebase_kinematics (linear x, angular z)
         super().__init__('directions_publisher')
-        self.publisher_ = self.create_publisher(
+        self.publisherCMD_ = self.create_publisher(
         	Twist,
         	'/robot1/cmd_vel', 
         	5)
         timer_period = 0.5  # seconds
-        self.timer = self.create_timer(timer_period, self.give_dir)
+        self.timerCMD = self.create_timer(timer_period, self.give_dir)
+
+        # Publisher: Publishes controller info [distance, currentHeading, desHeading]
+        self.desHeading=0.0;
+        self.dist =0.0;
+        self.publisherWAY_ = self.create_publisher(
+        	Float32MultiArray,
+        	'/robot1/waypoint', 
+        	5)
+        timer_period = 0.5  # seconds
+        self.timerWaypoint = self.create_timer(timer_period, self.publish_control)
 
         # Create a subscription to get current Euler Angles from IMU
-        self.curHeading = 0; #Euler Angle (heading)
+        self.curHeading = 0.0; #Euler Angle (heading)
         self.subscriptionEuler = self.create_subscription(
             Float32MultiArray,
             'robot1/imu/eulerAngle',
@@ -104,27 +114,33 @@ class giveDirections(Node):
     def euler_callback(self, msgE:Float32MultiArray):
         self.curHeading=msgE.data[0];
         print("Current Heading:",self.curHeading)
+
+    def publish_control(self):
+        msg=Float32MultiArray();
+        data = [self.dist,self.curHeading,self.desHeading];
+        msg.data=data;
+        self.publisherWAY_.publish(msg)
+
     def give_dir(self):
         bearingX = cos(self.desLat) * sin(self.desLon-self.curLon)
         bearingY = cos(self.curLat) * sin(self.desLat) - sin(self.curLat) * cos(self.desLat) * cos(self.desLon-self.curLon)
-        yawTarget = atan2(bearingX,bearingY)
-        print("Target bearing", degrees(yawTarget))
-        yawTarget = 90
-        yawDelta = degrees(yawTarget) - self.curHeading
+        self.desHeading = degrees(atan2(bearingX,bearingY))
+        print("Target bearing", self.desHeading)
+        # yawTarget = 90
+        yawDelta = self.desHeading - self.curHeading
         
-        dist = sqrt((self.desLat-self.curLat)**2 + (self.desLon-self.curLon)**2)
+        self.dist = sqrt((self.desLat-self.curLat)**2 + (self.desLon-self.curLon)**2)
         
         msg = Twist()
-        if dist > 0:
+        if self.dist > 0:
             msg.linear.x = 0.0
-            msg.angular.z = 0.5 * yawDelta/360
-            print("dist", dist)
+            msg.angular.z = -1.5 * yawDelta/360
+            print("dist", self.dist)
         msg.linear.x=0.0;
-        msg.angular.z=0.2;
+        # msg.angular.z=0.2;
 
         #print(msg)
-        self.publisher_.publish(msg)
-        
+        self.publisherCMD_.publish(msg)
         self.i += 1
 
 def main(args=None):
